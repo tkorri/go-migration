@@ -34,9 +34,11 @@ func UpgradeDir(db *sql.DB, directory string) error {
 	return nil
 }
 
-func createMigrationTable(db *sql.DB) {
+func createMigrationTable(db *sql.DB) error {
 	log.Println("Creating migration table")
-	db.Exec("CREATE TABLE migration_tbl (filename varchar, migration_date timestamp with time zone DEFAULT now(), CONSTRAINT pk_migration_tbl PRIMARY KEY (filename));")
+	_, err := db.Exec("CREATE TABLE migration_tbl (filename varchar, migration_date timestamp with time zone DEFAULT now(), CONSTRAINT pk_migration_tbl PRIMARY KEY (filename));")
+	
+	return err
 }
 
 func getInsertedFiles(db *sql.DB) (map[string]time.Time, error) {
@@ -45,7 +47,10 @@ func getInsertedFiles(db *sql.DB) (map[string]time.Time, error) {
 
 	_, err := db.Exec("SELECT * FROM migration_tbl ORDER BY filename")
 	if err != nil {
-		createMigrationTable(db)
+		err := createMigrationTable(db)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		
 		rows, err := db.Query("SELECT * FROM migration_tbl ORDER BY filename")
