@@ -15,6 +15,7 @@ type Configuration struct {
 }
 
 type migrationFile struct {
+	Project       string
 	Filename      string
 	MigrationDate time.Time
 }
@@ -73,7 +74,7 @@ func getInsertedFiles(db *sql.DB, config *Configuration) (map[string]time.Time, 
 		var file migrationFile
 
 		for rows.Next() {
-			err := rows.Scan(&file.Filename, &file.MigrationDate)
+			err := rows.Scan(&file.Project, &file.Filename, &file.MigrationDate)
 			if err != nil {
 				log.Fatal(err)
 			}
