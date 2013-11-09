@@ -10,8 +10,14 @@ func TestCreateMigrationTable(t *testing.T) {
 	
 	db, _ := sql.Open("postgres", "")
 	
+	config := &Configuration{
+		Project:   "test",
+		Directory: "migrations/",
+		TableName: "migration_tbl",
+	}
+	
 	// This should return an error
-	err := createMigrationTable(db)
+	err := createMigrationTable(db, config)
 	if err == nil {
 		t.Error("createMigrationTable didn't return an error")
 	} else {

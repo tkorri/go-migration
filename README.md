@@ -26,16 +26,23 @@ if err != nil {
     return err
 }
 
-err = migration.Upgrade(database)
+err = migration.Upgrade(database, "example")
 if err != nil {
     return err
 }
 ```
 
-Or if you want to give the sql directory you can use UpgradeDir.
+Or if you want to tweak the configurations you can use UpgradeDir.
 
 ```go
-err = migration.UpgradeDir(database, "migrations/")
+
+config := &Configuration{
+    Project:   "example",
+    Directory: "migrations/",
+    TableName: "migration_tbl",
+}
+
+err = migration.UpgradeDir(database, config)
 if err != nil {
     return err
 }
