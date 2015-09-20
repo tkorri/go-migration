@@ -10,7 +10,7 @@ databases.
 
 ## Import
 
-    import "github.com/tkorri/go-migration"
+    import "gopkg.in/tkorri/go-migration.v1"
 
 ## Usage
 
@@ -18,7 +18,7 @@ The migration is executed with Upgrade method.
 
 ```go
 import (
-    "github.com/tkorri/go-migration"
+    "gopkg.in/tkorri/go-migration.v1"
 )
 
 database, err := sql.Open("postgres", "user=example password=example dbname=example sslmode=disable")
@@ -47,6 +47,13 @@ if err != nil {
     return err
 }
 ```
+
+## Versions
+
+go-migration uses [gopkg.in](http://gopkg.in) for versioning. The supported
+versions are:
+
+* gopkg.in/tkorri/go-migration.v1 - The initial version
 
 ## Documentation
 
