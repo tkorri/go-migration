@@ -10,7 +10,7 @@ databases.
 
 ## Import
 
-    import "gopkg.in/tkorri/go-migration.v1"
+    import "gopkg.in/tkorri/go-migration.v2"
 
 ## Usage
 
@@ -18,7 +18,7 @@ The migration is executed with Upgrade method.
 
 ```go
 import (
-    "gopkg.in/tkorri/go-migration.v1"
+    "gopkg.in/tkorri/go-migration.v2"
 )
 
 database, err := sql.Open("postgres", "user=example password=example dbname=example sslmode=disable")
@@ -38,11 +38,10 @@ Or if you want to tweak the configurations you can use UpgradeDir.
 
 config := &Configuration{
     Project:   "example",
-    Directory: "migrations/",
     TableName: "migration_tbl",
 }
 
-err = migration.UpgradeDir(database, config)
+err = migration.UpgradeDir(database, config, "migrations/")
 if err != nil {
     return err
 }
@@ -64,7 +63,7 @@ Documentation is available at
 
 ## License
 
-Copyright (c) 2013 Taneli Korri
+Copyright (c) 2015 Taneli Korri
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
