@@ -43,11 +43,11 @@ func UpgradeDir(db *sql.DB, config *Configuration, directory string) error {
 
 	files, err := ioutil.ReadDir(directory)
 	if err != nil {
-		return errors.New("Error while opening migration directory")
+		return err
 	}
 
+	// Read files in directory to MigrationItems
 	var items []MigrationItem
-
 	for _, file := range files {
 
 		filename := directory + file.Name()
@@ -59,12 +59,8 @@ func UpgradeDir(db *sql.DB, config *Configuration, directory string) error {
 		items = append(items, MigrationItem{ID: file.Name(), Content: string(content)})
 	}
 
-	err = doUpgrade(db, config, items)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// Do the database upgrade
+	return doUpgrade(db, config, items)
 }
 
 // UpgradeItems upgrades the database with the given migration items
@@ -72,12 +68,7 @@ func UpgradeItems(db *sql.DB, config *Configuration, items []MigrationItem) erro
 	log.Println("*** Migration started ***")
 	defer log.Println("*** Migration ended ***")
 
-	err := doUpgrade(db, config, items)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return doUpgrade(db, config, items)
 }
 
 func createMigrationTable(db *sql.DB, config *Configuration) error {
@@ -129,7 +120,7 @@ func doUpgrade(db *sql.DB, config *Configuration, items []MigrationItem) error {
 	// Start new transaction
 	tx, err := db.Begin()
 	if err != nil {
-		return errors.New("Cannot start migration transaction")
+		return err
 	}
 
 	for _, item := range items {
@@ -143,14 +134,16 @@ func doUpgrade(db *sql.DB, config *Configuration, items []MigrationItem) error {
 		_, err = tx.Exec(item.Content)
 		if err != nil {
 			tx.Rollback()
-			return errors.New("Error in migration: " + err.Error())
+			log.Println(item.ID, "upgrade failed")
+			return err
 		}
 
 		// Insert file to migration table
 		_, err = tx.Exec("INSERT INTO "+config.TableName+" (project, filename) VALUES ($1, $2)", config.Project, item.ID)
 		if err != nil {
 			tx.Rollback()
-			return errors.New("Error while inserting file to migration table: " + err.Error())
+			log.Println(item.ID, "write to migration table failed")
+			return err
 		}
 	}
 
