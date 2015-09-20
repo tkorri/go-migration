@@ -3,10 +3,12 @@ package migration
 import (
 	"database/sql"
 	"errors"
+	"github.com/joefitzgerald/standardlog"
 	"io/ioutil"
-	"log"
 	"time"
 )
+
+var log standardlog.Logger
 
 type Configuration struct {
 	Project   string // Project id for this project
@@ -22,6 +24,11 @@ type migrationFile struct {
 type MigrationItem struct {
 	ID      string // Unique id for this database change
 	Content string // The sql content
+}
+
+// SetLog sets the logger used for the logging ouput
+func SetLog(l standardlog.Logger) {
+  log = l
 }
 
 // Upgrade database using the the given database connection and read the
