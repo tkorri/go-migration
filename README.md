@@ -54,6 +54,7 @@ go-migration uses [gopkg.in](http://gopkg.in) for versioning. The supported
 versions are:
 
 * gopkg.in/tkorri/go-migration.v1 - The initial version
+* gopkg.in/tkorri/go-migration.v2 - Added support for providing upgrade files as an array of strings  
 
 ## Documentation
 

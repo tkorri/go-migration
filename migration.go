@@ -10,7 +10,6 @@ import (
 
 type Configuration struct {
 	Project   string // Project id for this project
-	Directory string // Directory containing the migrations files
 	TableName string // Migration table name
 }
 
@@ -20,29 +19,63 @@ type migrationFile struct {
 	MigrationDate time.Time
 }
 
+type MigrationItem struct {
+	ID      string // Unique id for this database change
+	Content string // The sql content
+}
+
 // Upgrade database using the the given database connection and read the
 // migration sql files from "migrations/" directory
 func Upgrade(db *sql.DB, project string) error {
 	config := &Configuration{
 		Project:   project,
-		Directory: "migrations/",
 		TableName: "migration_tbl",
 	}
 
-	return UpgradeDir(db, config)
+	return UpgradeDir(db, config, "migrations/")
 }
 
 // Upgrade database using the the given database connection and read the
 // migration sql files from the given directory
-func UpgradeDir(db *sql.DB, config *Configuration) error {
+func UpgradeDir(db *sql.DB, config *Configuration, directory string) error {
 	log.Println("*** Migration started ***")
+	defer log.Println("*** Migration ended ***")
 
-	err := doUpgrade(db, config)
+	files, err := ioutil.ReadDir(directory)
+	if err != nil {
+		return errors.New("Error while opening migration directory")
+	}
+
+	var items []MigrationItem
+
+	for _, file := range files {
+
+		filename := directory + file.Name()
+		content, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return errors.New("Error reading " + filename + ": " + err.Error())
+		}
+
+		items = append(items, MigrationItem{ID: file.Name(), Content: string(content)})
+	}
+
+	err = doUpgrade(db, config, items)
 	if err != nil {
 		return err
 	}
 
-	log.Println("*** Migration ended ***")
+	return nil
+}
+
+// UpgradeItems upgrades the database with the given migration items
+func UpgradeItems(db *sql.DB, config *Configuration, items []MigrationItem) error {
+	log.Println("*** Migration started ***")
+	defer log.Println("*** Migration ended ***")
+
+	err := doUpgrade(db, config, items)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -86,55 +119,42 @@ func getInsertedFiles(db *sql.DB, config *Configuration) (map[string]time.Time, 
 	return files, nil
 }
 
-func doUpgrade(db *sql.DB, config *Configuration) error {
+func doUpgrade(db *sql.DB, config *Configuration, items []MigrationItem) error {
 
 	insertedFiles, err := getInsertedFiles(db, config)
 	if err != nil {
 		return err
 	}
 
-	files, err := ioutil.ReadDir(config.Directory)
-	if err != nil {
-		return errors.New("Error while opening migration directory")
-	}
-
 	// Start new transaction
-	transaction, err := db.Begin()
-
+	tx, err := db.Begin()
 	if err != nil {
 		return errors.New("Cannot start migration transaction")
 	}
 
-	for _, file := range files {
+	for _, item := range items {
 
 		// Skip files that have already been migrated
-		if _, ok := insertedFiles[file.Name()]; ok {
+		if _, ok := insertedFiles[item.ID]; ok {
 			continue
 		}
 
-		filename := config.Directory + file.Name()
-		content, err := ioutil.ReadFile(filename)
+		log.Println("Executing", item.ID)
+		_, err = tx.Exec(item.Content)
 		if err != nil {
-			transaction.Rollback()
-			return errors.New("Error reading " + filename + ": " + err.Error())
-		}
-
-		log.Println("Executing", file.Name())
-		_, err = transaction.Exec(string(content))
-		if err != nil {
-			transaction.Rollback()
+			tx.Rollback()
 			return errors.New("Error in migration: " + err.Error())
 		}
 
 		// Insert file to migration table
-		_, err = transaction.Exec("INSERT INTO "+config.TableName+" (project, filename) VALUES ($1, $2)", config.Project, file.Name())
+		_, err = tx.Exec("INSERT INTO "+config.TableName+" (project, filename) VALUES ($1, $2)", config.Project, item.ID)
 		if err != nil {
-			transaction.Rollback()
+			tx.Rollback()
 			return errors.New("Error while inserting file to migration table: " + err.Error())
 		}
 	}
 
-	transaction.Commit()
+	tx.Commit()
 
 	return nil
 }

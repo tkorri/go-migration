@@ -12,7 +12,6 @@ func TestCreateMigrationTable(t *testing.T) {
 	
 	config := &Configuration{
 		Project:   "test",
-		Directory: "migrations/",
 		TableName: "migration_tbl",
 	}
 	
