@@ -1,9 +1,9 @@
 package migration
 
 import (
-	"testing"
 	"database/sql"
 	_ "github.com/lib/pq"
+	"testing"
 )
 
 func TestCreateMigrationTable(t *testing.T) {
