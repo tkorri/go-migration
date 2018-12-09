@@ -5,10 +5,12 @@ import (
 	"errors"
 	"github.com/joefitzgerald/standardlog"
 	"io/ioutil"
+	lg "log"
+	"os"
 	"time"
 )
 
-var log standardlog.Logger
+var log standardlog.Logger = lg.New(os.Stdout, "", 0)
 
 type Configuration struct {
 	Project   string // Project id for this project
