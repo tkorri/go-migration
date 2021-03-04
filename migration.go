@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/joefitzgerald/standardlog"
-	"io/ioutil"
+	"io/fs"
 	lg "log"
 	"os"
 	"time"
@@ -41,16 +41,41 @@ func Upgrade(db *sql.DB, project string) error {
 		TableName: "migration_tbl",
 	}
 
-	return UpgradeDir(db, config, "migrations/")
+	return UpgradeDir(db, config, "migrations")
+}
+
+// Upgrade database using the the given database connection and read the
+// migration sql files from root of the given fs
+func UpgradeFs(db *sql.DB, project string, fsys fs.FS) error {
+	config := &Configuration{
+		Project:   project,
+		TableName: "migration_tbl",
+	}
+
+	return UpgradeFsDir(db, config, fsys)
 }
 
 // Upgrade database using the the given database connection and read the
 // migration sql files from the given directory
 func UpgradeDir(db *sql.DB, config *Configuration, directory string) error {
+	path, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	migrationsFS, err := fs.Sub( os.DirFS(path), directory)
+	if err != nil {
+		return err
+	}
+	return UpgradeFsDir(db, config, migrationsFS)
+}
+
+// Upgrade database using the the given database connection and read the
+// migration sql files from the fs instance directory
+func UpgradeFsDir(db *sql.DB, config *Configuration, fsys fs.FS) error {
 	log.Println("*** Migration started ***")
 	defer log.Println("*** Migration ended ***")
 
-	files, err := ioutil.ReadDir(directory)
+	files, err := fs.ReadDir(fsys, ".")
 	if err != nil {
 		return err
 	}
@@ -59,8 +84,8 @@ func UpgradeDir(db *sql.DB, config *Configuration, directory string) error {
 	var items []MigrationItem
 	for _, file := range files {
 
-		filename := directory + file.Name()
-		content, err := ioutil.ReadFile(filename)
+		filename := file.Name()
+		content, err := fs.ReadFile(fsys, filename)
 		if err != nil {
 			return errors.New("Error reading " + filename + ": " + err.Error())
 		}
@@ -89,7 +114,7 @@ func createMigrationTable(db *sql.DB, config *Configuration) error {
 
 func getInsertedFiles(db *sql.DB, config *Configuration) (map[string]time.Time, error) {
 
-	var files map[string]time.Time = make(map[string]time.Time)
+	var files = make(map[string]time.Time)
 
 	_, err := db.Exec("SELECT * FROM " + config.TableName + " ORDER BY filename")
 	if err != nil {

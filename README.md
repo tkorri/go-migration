@@ -41,7 +41,31 @@ config := &Configuration{
     TableName: "migration_tbl",
 }
 
-err = migration.UpgradeDir(database, config, "migrations/")
+err = migration.UpgradeDir(database, config, "migrations")
+if err != nil {
+    return err
+}
+```
+
+The library also provides FS equivalents of the upgrade functions which can be used with go embed:
+
+```go
+
+//go:embed migrations
+var migrationsFS embed.FS
+
+err = migration.UpgradeFs(database, "example", migrationsFS)
+if err != nil {
+    return err
+}
+
+
+config := &Configuration{
+    Project:   "example",
+    TableName: "migration_tbl",
+}
+
+err = migration.UpgradeFsDir(database, config, migrationsFS)
 if err != nil {
     return err
 }
@@ -54,7 +78,7 @@ go-migration supports go modules so you can set the version in go.mod:
 ```go
 require (
         ...
-	github.com/tkorri/go-migration/v3 v3.0.1
+	github.com/tkorri/go-migration/v3 v3.1.0
 	...
 )
 ```
