@@ -126,8 +126,9 @@ func getInsertedFiles(db *sql.DB, config *Configuration) (map[string]time.Time, 
 
 		rows, err := db.Query("SELECT * FROM " + config.TableName + " ORDER BY filename")
 		if err != nil {
-			return nil, errors.New("Error fetching already migrated files")
+			return nil, errors.New("error fetching already migrated files")
 		}
+		defer rows.Close()
 
 		var file migrationFile
 

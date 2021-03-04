@@ -78,7 +78,7 @@ go-migration supports go modules so you can set the version in go.mod:
 ```go
 require (
         ...
-	github.com/tkorri/go-migration/v3 v3.1.0
+	github.com/tkorri/go-migration/v3 v3.1.1
 	...
 )
 ```
